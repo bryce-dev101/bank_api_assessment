@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +18,11 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'item_name' => fake()->words(2, true),
+            'item_description' => fake()->sentence(),
+            'amount' => fake()->randomFloat(2, 1, 999),
+            'status' => 'created',
+            'user_id' => User::factory()
         ];
     }
 }
