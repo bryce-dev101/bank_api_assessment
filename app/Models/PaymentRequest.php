@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PaymentNotification extends Model
+class PaymentRequest extends Model
 {
     use HasFactory;
 
@@ -15,15 +15,15 @@ class PaymentNotification extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'pf_payment_id',
-        'payment_status',
+        'customer_first_name',
+        'customer_last_name',
+        'customer_email',
+        'customer_cell_number',
         'item_name',
         'item_description',
         'amount',
         'merchant_id',
-        'token',
-        'signature',
-        'billing_date',
+        'merchant_key',
         'payment_id'
     ];
 

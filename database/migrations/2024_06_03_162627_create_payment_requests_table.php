@@ -12,17 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payment_notifications', function (Blueprint $table) {
+        Schema::create('payment_requests', function (Blueprint $table) {
             $table->id();
-            $table->integer('pf_payment_id');
-            $table->enum('payment_status', ['cancelled','complete']);
+            $table->string('customer_first_name');
+            $table->string('customer_last_name');
+            $table->string('customer_email');
+            $table->string('customer_cell_number');
             $table->string('item_name');
             $table->text('item_description');
             $table->decimal('amount');
             $table->integer('merchant_id');
-            $table->string('token', 36);
-            $table->string('signature', 32);
-            $table->date('billing_date')->nullable();
+            $table->string('merchant_key',15);
             $table->foreignIdFor(Payment::class);
             $table->timestamps();
         });
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payment_notifications');
+        Schema::dropIfExists('payment_requests');
     }
 };

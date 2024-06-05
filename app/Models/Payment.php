@@ -15,8 +15,8 @@ class Payment extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'order_number',
-        'merchant_id',
+        'item_name',
+        'item_description',
         'amount',
         'status',
         'user_id'
@@ -27,8 +27,13 @@ class Payment extends Model
         return $this->belongsTo('App\Models\User');
     }
     
-    public function payment_notifications()
+    public function payment_notification()
     {
         return $this->hasMany('App\Models\PaymentNotification');
+    }
+    
+    public function payment_request()
+    {
+        return $this->hasMany('App\Models\PaymentRequest');
     }
 }

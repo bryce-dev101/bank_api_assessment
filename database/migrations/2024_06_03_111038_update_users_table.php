@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function(Blueprint $table) {
-            $table->integer('merchant_id');
-            $table->string('merchant_key', 15);
+            $table->integer('cell_number');
         });
     }
 
@@ -23,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['merchant_id', 'merchant_key']);
+            $table->dropColumn('cell_number');
         });
     }
 };

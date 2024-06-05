@@ -14,10 +14,10 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('order_number');
-            $table->integer('merchant_id');
+            $table->string('item_name');
+            $table->text('item_description');
             $table->decimal('amount');
-            $table->string('status')->default('sent');
+            $table->enum('status', ['created','sent','cancelled','completed']);
             $table->foreignIdFor(User::class);
             $table->timestamps();
         });
