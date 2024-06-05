@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PaymentRequest extends Model
 {
@@ -27,8 +28,8 @@ class PaymentRequest extends Model
         'payment_id'
     ];
 
-    public function payment()
+    public function payment(): BelongsTo
     {
-        return $this->belongsTo('App\Models\Payment');
+        return $this->belongsTo(Payment::class);
     }
 }

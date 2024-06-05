@@ -14,14 +14,14 @@ return new class extends Migration
     {
         Schema::create('payment_notifications', function (Blueprint $table) {
             $table->id();
-            $table->integer('pf_payment_id');
+            $table->bigInteger('pf_payment_id');
             $table->enum('payment_status', ['cancelled','complete']);
             $table->string('item_name');
             $table->text('item_description');
             $table->decimal('amount');
-            $table->integer('merchant_id');
-            $table->string('token', 36);
+            $table->bigInteger('merchant_id');
             $table->string('signature', 32);
+            $table->string('token', 36)->nullable();
             $table->date('billing_date')->nullable();
             $table->foreignIdFor(Payment::class);
             $table->timestamps();
