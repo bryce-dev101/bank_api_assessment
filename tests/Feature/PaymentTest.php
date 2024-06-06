@@ -16,13 +16,11 @@ class PaymentTest extends TestCase
      */
     public function test_making_a_payment_as_a_logged_in_user(): void
     {
-        $user = Sanctum::actingAs(
-            User::factory()->create(),
-            ['*']
+        Sanctum::actingAs(
+            User::factory()->create()
         );
 
         $data = [
-            'passPhrase' => 'jt7NOE43FZPn',
             'amount' => '100.50',
             'item_name' => 'Test Item',
             'item_description' => 'Testing Item description'
@@ -30,6 +28,6 @@ class PaymentTest extends TestCase
 
         $response = $this->post(route('payment.initialize', $data));
 
-        $response->assertStatus(200);
+        $response->assertOk();
     }
 }
