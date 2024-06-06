@@ -18,11 +18,14 @@ return new class extends Migration
             $table->enum('payment_status', ['cancelled','complete']);
             $table->string('item_name');
             $table->text('item_description');
-            $table->decimal('amount');
+            $table->decimal('amount_gross');
+            $table->decimal('amount_fee');
+            $table->decimal('amount_net');
             $table->bigInteger('merchant_id');
+            $table->string('name_first');
+            $table->string('name_last');
+            $table->string('email_address');
             $table->string('signature', 32);
-            $table->string('token', 36)->nullable();
-            $table->date('billing_date')->nullable();
             $table->foreignIdFor(Payment::class);
             $table->timestamps();
         });

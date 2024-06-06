@@ -12,5 +12,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/payment/initialize', [PaymentController::class, 'initialize'])->name('payment.initialize');
     Route::post('/payment/show', [PaymentController::class, 'show'])->name('payment.show');
-    Route::post('/payment/notify', [PaymentController::class, 'notify'])->name('payment.notify');
+    Route::post('/payment/notify', [PaymentController::class, 'handleNotification'])->name('payment.notify');
 });
