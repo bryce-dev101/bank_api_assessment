@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PaymentInitiationRequest;
 use App\Http\Requests\PaymentNotificationRequest;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
@@ -50,12 +51,12 @@ class PaymentController extends Controller
             'merchant_key' => config('payfast.merchant_key'),
             'name_first' => $user->first_name,
             'name_last' => $user->last_name,
-            'email_address' => $user->email_address,
+            'email_address' => $user->email,
             'cell_number' => $user->cell_number,
-            'm_payment_id' => $requestData->payment_id ?? 1,
-            'amount' => $requestData->amount,
-            'item_name' => $requestData->item_name,
-            'item_description' => $requestData->item_description
+            'm_payment_id' => strval($requestData['payment_id']),
+            'amount' => $requestData['amount'],
+            'item_name' => $requestData['item_name'],
+            'item_description' => $requestData['item_description']
         ];
 
         // Generate and append signature to payload
@@ -63,6 +64,58 @@ class PaymentController extends Controller
 
         // Return the fully prepared data array
         return $data;
+    }
+
+    /**
+     * Creates and saves a payment record associated with a user.
+     *
+     * @param User $user The user model instance to associate the payment with.
+     * @param array $requestData Data used to create the payment.
+     * @return Payment|null The newly created payment model instance or null if failed.
+     */
+    private function savePayment(User $user, array $requestData): ?Payment
+    {
+        try {
+            // Create a new payment record associated with the user
+            $payment = $user->payments()->create($requestData);
+            return $payment;
+        } catch (\Exception $e) {
+            // log the error
+            Log::error('Failed to save payment: ' . $e->getMessage());
+            return null;
+        }
+    }
+    /**
+     * Saves a new payment request linked to the specified payment object.
+     *
+     * @param Payment $payment The payment object to which the request will be linked.
+     * @param array $data The data array containing all necessary details for the payment request.
+     */
+    private function savePaymentRequest(Payment $payment, array $data): void
+    {
+        // Prepare the data array for the payment request with key renaming.
+        $parsedData = [
+            'customer_first_name' => $data['name_first'],
+            'customer_last_name' => $data['name_last'],
+            'customer_email' => $data['email_address'],
+            'customer_cell_number' => $data['cell_number'],
+            'item_name' => $data['item_name'],
+            'item_description' => $data['item_description'],
+            'amount' => $data['amount'],
+            'merchant_id' => $data['merchant_id'],
+            'merchant_key' => $data['merchant_key'],
+            'payment_id' => $data['m_payment_id'],
+            'signature' => $data['signature']
+        ];
+
+
+        // Create a payment request using the parsed data.
+        try {
+            $payment->paymentRequest()->create($parsedData);
+        } catch (\Exception $e) {
+            // Handle potential errors that could occur during the creation process.
+            Log::error("Failed to save payment request: {$e->getMessage()}");
+        }
     }
 
     /**
@@ -87,8 +140,11 @@ class PaymentController extends Controller
      */
     public function initialize(PaymentInitiationRequest $request): Response
     {
-        // Generate the data array for the PayFast API request using validated request data.
-        $data = $this->generateRequest($request->user(), $request);
+        // Save payment and retrieve the Payment ID
+        $payment = $this->savePayment($request->user(), $request->all());
+
+        // Prepare data including the payment ID for the PayFast API request
+        $data = $this->generateRequest($request->user(), array_merge($request->all(), ['payment_id' => $payment->id]));
 
         // Prepare the API endpoint URL.
         $apiUrl = config('payfast.api_url') . 'eng/process';
@@ -96,14 +152,19 @@ class PaymentController extends Controller
         // Send the data to PayFast as a form-encoded POST request and store the response.
         $response = Http::asForm()->post($apiUrl, $data);
 
-        // Error logging.
         if ($response->failed()) {
             Log::error('PayFast API request failed', [
                 'url' => $apiUrl,
                 'data' => $data,
                 'response' => $response->body()
             ]);
+
+            // if there is an error abort operateion 
+            abort(502, "Error communicating with payment gateway.");
         }
+
+        // Save the payment request if it passes
+        $this->savePaymentRequest($payment, $data);
 
         // Return the HTTP response to the caller
         return $response;
@@ -114,7 +175,13 @@ class PaymentController extends Controller
      */
     public function handleNotification(PaymentNotificationRequest $request)
     {
-        
+        $data = $request->except(['signature']);
+
+        $generated_sigature = $this->generateSignature($data);
+
+        if ($generated_sigature === $request->signature) {
+            return true;
+        }
     }
 
     /**

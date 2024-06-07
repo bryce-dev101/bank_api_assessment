@@ -25,7 +25,8 @@ class PaymentRequest extends Model
         'amount',
         'merchant_id',
         'merchant_key',
-        'payment_id'
+        'payment_id',
+        'signature'
     ];
 
     public function payment(): BelongsTo

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('amount');
             $table->integer('merchant_id');
             $table->string('merchant_key',15);
+            $table->string('signature',32);
             $table->foreignIdFor(Payment::class);
             $table->timestamps();
         });
