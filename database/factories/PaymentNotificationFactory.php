@@ -35,7 +35,7 @@ class PaymentNotificationFactory extends Factory
             'payment_id' => Payment::factory()
         ];
 
-        $data['signature'] = http_build_query($data, '', '&') . '&passphrase=' . urlencode(config('payfast.merchant_passphrase'));
+        $data['signature'] = md5(http_build_query($data, '', '&') . '&passphrase=' . urlencode(config('payfast.merchant_passphrase')));
 
         return $data;
     }
