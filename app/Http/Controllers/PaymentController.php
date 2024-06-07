@@ -6,8 +6,8 @@ use App\Http\Requests\PaymentInitiationRequest;
 use App\Http\Requests\PaymentNotificationRequest;
 use App\Models\Payment;
 use App\Models\User;
-use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -111,11 +111,64 @@ class PaymentController extends Controller
 
         // Create a payment request using the parsed data.
         try {
-            $payment->paymentRequest()->create($parsedData);
+            $payment->paymentRequests()->create($parsedData);
         } catch (\Exception $e) {
             // Handle potential errors that could occur during the creation process.
             Log::error("Failed to save payment request: {$e->getMessage()}");
         }
+    }
+
+    /**
+     * Match the generated signature with the request signature.
+     *
+     * @param string $generatedSignature
+     * @param string $requestSignature
+     * @return bool
+     */
+    private function matchSignature(string $generatedSignature, string $requestSignature): bool
+    {
+        return $generatedSignature === $requestSignature;
+    }
+
+    /**
+     * Match the payment amount with the gross amount, allowing a small tolerance.
+     *
+     * @param float $paymentAmount
+     * @param float $grossAmount
+     * @return bool
+     */
+    private function matchAmount(float $paymentAmount, float $grossAmount): bool
+    {
+        return !(abs($paymentAmount - $grossAmount) > 0.01);
+    }
+
+    /**
+     * Confirm the server response with PayFast.
+     * Fake this for the assessment as there is no direct communication with Payfast at the moment
+     *
+     * @param array $data
+     * @return bool
+     */
+    private function confirmWithPayFast(array $data): bool
+    {
+        // Build the parameter string for the PayFast server confirmation
+        $pfParamString = http_build_query($data, '', '&') . '&passphrase=' . urlencode(config('payfast.merchant_passphrase'));
+
+        // URL for PayFast validation
+        $url = config('payfast.api_url') . 'eng/query/validate/';
+
+        // Mocking the HTTP request
+        Http::fake([
+            $url => Http::response('VALID', 200)
+        ]);
+
+        // Make the HTTP request to PayFast
+        $response = Http::withOptions(['verify' => true])->asForm()->post($url, [
+            'pfParamString' => $pfParamString // Sending the string as a parameter
+        ]);
+
+        // Check if the response from PayFast is 'VALID'
+        return $response->body() === 'VALID';
     }
 
     /**
@@ -167,21 +220,44 @@ class PaymentController extends Controller
         $this->savePaymentRequest($payment, $data);
 
         // Return the HTTP response to the caller
-        return $response;
+        return response(['status' => 'success'], 200);
     }
 
     /**
-     * Payfast will send us a notification that the payment has been made or cancelled
+     * Payfast will send us a notification that the payment has been made or cancelled.
+     *
+     * @param PaymentNotificationRequest $request
+     * @return Response
      */
-    public function handleNotification(PaymentNotificationRequest $request)
+    public function handleNotification(PaymentNotificationRequest $request): Response
     {
+        // Extract the data from the request, excluding the signature
         $data = $request->except(['signature']);
 
-        $generated_sigature = $this->generateSignature($data);
+        // Generate the signature using the extracted data
+        $generatedSignature = $this->generateSignature($data);
 
-        if ($generated_sigature === $request->signature) {
-            return true;
+        // Find the payment using the provided payment ID
+        $payment = Payment::find($request->m_payment_id);
+
+        // If the payment is not found, return a 404 response
+        if (!$payment) {
+            return response(['error' => 'Payment not found.'], 404);
         }
+
+        $matchSignature = $this->matchSignature($generatedSignature, $request->signature); // Check if the generated signature matches the request signature
+        $matchAmount = $this->matchAmount($payment->amount, $request->amount_gross); // Check if the amount matches, allowing a small tolerance
+        $pfServerConfirmation = $this->confirmWithPayFast($data); // Confirm the server response with PayFast
+
+        // If all conditions are met, create a payment notification and return a success response
+        if ($matchSignature && $matchAmount && $pfServerConfirmation) {
+            $payment->paymentNotifications()->create($request->except(['m_payment_id']));
+
+            return response(['status' => 'success'], 200);
+        }
+
+        // If any condition fails, return a validation error response
+        return response(['error' => 'Validation failed.'], 400);
     }
 
     /**

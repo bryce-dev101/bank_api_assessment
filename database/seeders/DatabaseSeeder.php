@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $user = User::factory()->count(10)->has(
-            Payment::factory()->count(3)->hasPaymentNotification(1)->hasPaymentRequest(1)
+            Payment::factory()->count(3)->hasPaymentNotifications(1)->hasPaymentRequests(1)
         )->create();
 
         // User::factory()->create([

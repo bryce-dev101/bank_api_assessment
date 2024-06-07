@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -11,7 +12,7 @@ use Tests\TestCase;
 class PaymentTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     /**
      * Test making a payment as a logged-in user.
      */
@@ -48,7 +49,49 @@ class PaymentTest extends TestCase
         ]);
 
         // Ensure that the payment request data matches expected values
-        $paymentRequest = $payment->paymentRequest()->first();
+        $paymentRequest = $payment->paymentRequests()->first();
         $this->assertEquals($paymentRequest->item_name, $data['item_name']);
+    }
+
+    /**
+     * Test recieveing a payment notification from payfast.
+     */
+    public function test_payfast_making_a_request_notifying_of_successful_payment(): void
+    {
+        $amountFee = fake()->randomFloat(2, 1, 100);
+        
+        $user = User::factory()->has(
+            Payment::factory()->hasPaymentRequests(1)
+        )->create();
+
+        $payment = $user->payments()->first();
+        $paymentRequest = $payment->paymentRequests->first();
+
+        // Payment data
+        $data = [
+            'm_payment_id' => $payment->id,
+            'pf_payment_id' => fake()->numerify('#######'),
+            'payment_status' => 'COMPLETE',
+            'item_name' => $payment->item_name,
+            'item_description' => $payment->item_description,
+            'amount_gross' => $payment->amount,
+            'amount_fee' => $amountFee,
+            'amount_net' => strval($payment->amount - $amountFee),
+            'name_first' => $user->first_name,
+            'name_last' => $user->last_name,
+            'email_address' => $user->email,
+            'merchant_id' => strval($paymentRequest->merchant_id)
+        ];
+
+        // Build query string and generate signature
+        $data['signature'] = md5(http_build_query($data, '', '&') . '&passphrase=' . urlencode(config('payfast.merchant_passphrase')));
+
+        // Make a POST request to the payment notification route
+        $response = $this->withHeaders([
+            'Referer' => 'http://localhost/'
+        ])->post(route('payment.notify', $data));
+
+        // Assert the response was OK
+        $response->assertOk();
     }
 }
