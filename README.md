@@ -13,7 +13,7 @@ To set up the project, run the following commands:
 To run the tests, use the command:
 
 ```sh
-"./vendor/bin/sail artisan test"
+./vendor/bin/sail artisan test
 ```
 
 ## Project Report
