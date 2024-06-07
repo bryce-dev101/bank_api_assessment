@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('item_name');
             $table->text('item_description');
             $table->decimal('amount');
-            $table->enum('status', ['created','sent','cancelled','completed'])->default('created');
+            $table->enum('status', ['created', 'sent', 'cancelled', 'completed'])->default('created');
             $table->foreignIdFor(User::class);
             $table->timestamps();
         });

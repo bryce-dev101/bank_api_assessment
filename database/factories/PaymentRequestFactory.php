@@ -20,8 +20,8 @@ class PaymentRequestFactory extends Factory
         return [
             'customer_first_name' => fake()->firstName(),
             'customer_last_name' => fake()->lastName(),
-            'customer_email' => fake()->unique()->email(),
-            'customer_cell_number' => fake()->phoneNumber(),
+            'customer_email' => fake()->email(),
+            'customer_cell_number' => fake()->numerify('0#########'),
             'item_name' => fake()->words(2, true),
             'item_description' => fake()->sentence(),
             'amount' => fake()->randomFloat(2, 1, 999),
