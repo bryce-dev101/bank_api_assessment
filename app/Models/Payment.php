@@ -29,12 +29,12 @@ class Payment extends Model
         return $this->belongsTo(User::class);
     }
     
-    public function paymentNotification(): HasMany
+    public function paymentNotifications(): HasMany
     {
         return $this->hasMany(PaymentNotification::class);
     }
     
-    public function paymentRequest(): HasMany
+    public function paymentRequests(): HasMany
     {
         return $this->hasMany(PaymentRequest::class);
     }

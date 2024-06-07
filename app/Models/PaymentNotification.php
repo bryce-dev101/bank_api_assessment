@@ -20,11 +20,14 @@ class PaymentNotification extends Model
         'payment_status',
         'item_name',
         'item_description',
-        'amount',
+        'amount_gross',
+        'amount_fee',
+        'amount_net',
         'merchant_id',
-        'token',
+        'name_first',
+        'name_last',
+        'email_address',
         'signature',
-        'billing_date',
         'payment_id'
     ];
 

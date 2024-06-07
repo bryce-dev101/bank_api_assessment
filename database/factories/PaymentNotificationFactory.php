@@ -17,15 +17,26 @@ class PaymentNotificationFactory extends Factory
      */
     public function definition(): array
     {
-        return [
+        $amountGross = fake()->randomFloat(2, 1, 9999);
+        $amountFee = fake()->randomFloat(2, 1, 100);
+
+        $data = [
             'pf_payment_id' => fake()->numerify('##########'),
             'payment_status' => 'complete',
             'item_name' => fake()->words(2, true),
             'item_description' => fake()->sentence(),
-            'amount' => fake()->randomFloat(2, 1, 999),
+            'amount_gross' => $amountGross,
+            'amount_fee' => $amountFee,
+            'amount_net' => $amountGross - $amountFee,
             'merchant_id' => '10000100',
-            'payment_id' => Payment::factory(),
-            'signature' => 'ad8e7685c9522c24365d7ccea8cb3db7'
+            "name_first" => fake()->firstName(),
+            "name_last" => fake()->lastName(),
+            "email_address" => fake()->email(),
+            'payment_id' => Payment::factory()
         ];
+
+        $data['signature'] = http_build_query($data, '', '&') . '&passphrase=' . urlencode(config('payfast.merchant_passphrase'));
+
+        return $data;
     }
 }
